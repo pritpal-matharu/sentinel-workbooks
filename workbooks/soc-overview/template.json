@@ -1,0 +1,133 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "# SOC Overview Dashboard\n\nReal-time security operations center visibility and incident management"
+      },
+      "name": "Header"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SecurityIncident\n| where CreatedTime >= ago(7d)\n| summarize Count=dcount(IncidentNumber)\n| project ['Open Incidents']=Count",
+              "size": 3,
+              "title": "Open Incidents (7d)",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "name": "Open Incidents Card"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SecurityAlert\n| where TimeGenerated >= ago(24h)\n| where AlertSeverity in ('High', 'Critical')\n| summarize Count=dcount(SystemAlertId)\n| project ['Critical Alerts (24h)']=Count",
+              "size": 3,
+              "title": "Critical Alerts (24h)",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "name": "Critical Alerts Card"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SecurityIncident\n| where Status == 'Closed'\n| extend Duration = ClosedTime - CreatedTime\n| summarize AvgMTTR=avg(Duration)\n| extend AvgMTTRHours = floor(AvgMTTR / 1h)\n| project ['Avg MTTR (hours)']=AvgMTTRHours",
+              "size": 3,
+              "title": "Average MTTR (hours)",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "name": "MTTR Card"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SecurityAlert\n| where TimeGenerated >= ago(7d)\n| summarize AlertCount=dcount(SystemAlertId)\n| project ['Total Alerts (7d)']=AlertCount",
+              "size": 3,
+              "title": "Total Alerts (7d)",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "name": "Total Alerts Card"
+          }
+        ]
+      },
+      "name": "Executive Summary"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "SecurityIncident\n| where CreatedTime >= ago(7d)\n| extend Status_Label = case(\n    Status == 'New', 'Open',\n    Status == 'InProgress', 'In Progress',\n    Status == 'Resolved', 'Closed',\n    'Other')\n| summarize Count=count() by Status_Label\n| sort by Count desc\n| render piechart",
+        "size": 0,
+        "title": "Incidents by Status",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "Incidents by Status"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "SecurityIncident\n| where CreatedTime >= ago(7d)\n| summarize Count=count() by Severity\n| sort by Count desc\n| render columnchart",
+        "size": 0,
+        "title": "Incidents by Severity",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "Incidents by Severity"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "SecurityAlert\n| where TimeGenerated >= ago(7d)\n| extend Day=bin(TimeGenerated, 1d)\n| summarize AlertCount=dcount(SystemAlertId) by Day\n| sort by Day asc\n| render timechart",
+        "size": 0,
+        "title": "Alert Volume Trend (7d)",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "Alert Trend"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "SecurityIncident\n| where CreatedTime >= ago(7d) and Status != 'Closed'\n| order by CreatedTime desc\n| limit 10\n| project IncidentNumber, Title, Severity, Status, CreatedTime, Owner\n| rename ['Incident ID']= IncidentNumber, ['Title']='Title', ['Severity']='Severity', ['Status']='Status', ['Created']='CreatedTime', ['Assigned To']='Owner'",
+        "size": 0,
+        "title": "Top 10 Open Incidents",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "Top Open Incidents"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "SecurityAlert\n| where TimeGenerated >= ago(7d)\n| summarize AlertCount=dcount(SystemAlertId) by AlertName\n| top 10 by AlertCount\n| render barchart",
+        "size": 0,
+        "title": "Top 10 Alert Rules",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "Top Alert Rules"
+    }
+  ],
+  "fallbackResourceIds": [],
+  "fromTemplateId": "Sentinel-SOC-Overview",
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
+}
